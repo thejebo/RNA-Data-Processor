@@ -1,0 +1,9 @@
+.vscode/
+node_modules/
+inputs/*
+outputs/*
+scripts/*
+
+!inputs/examples/*
+!outputs/examples/*
+!scripts/examples/*
