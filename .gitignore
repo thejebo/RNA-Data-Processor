@@ -4,6 +4,6 @@ inputs/*
 outputs/*
 scripts/*
 
-!inputs/examples/*
-!outputs/examples/*
-!scripts/examples/*
+!inputs/.gitkeep
+!outputs/.gitkeep
+!scripts/.gitkeep
