@@ -1,34 +1,49 @@
-# Purpose of project
-- The project arose from the need of processing large dataset of strings which associated with multiple values.
-- From the dataset, strings had to be filtered with different parameters. For example:
--- a string has to be certain length.
--- the string's values have to behave certain way.
--- the string must be unique accross multiple datasets.
+# RNA Data Processor
 
-Also:
-- Similar strings needed to be allocated to groups.
-- Strings had to be sorted according to the associated values.
+## Purpose
+The RNA Data Processor project emerged to address the challenges associated with processing large datasets of strings, each linked to multiple values. Key objectives include:
 
-## Example of the input data
-| String | Value 1 | Value 2 | Value 3 | Value 4|
-| --- | --- | --- | --- | --- |
-| AAAAAAAA | 1 | 2 | 3 | 4 |
-| BBBBBBBB | 0 | 2 | 1 | 8 |
-| CCCCCCCC | 10 | 20 | 11 | 100 |
-| DDDDDDDDDDD | 10 | 20 | 50 | 100 |
-| FFFFAAAB | 50 | 70 | 100 | 101 |
+- Filtering strings based on various parameters, such as length and behavior of associated values.
+- Ensuring string uniqueness across multiple datasets.
+- Allocating similar strings into groups.
+- Sorting strings based on their associated values.
 
-The project was specifically made to deal with processed RNA-data, thus having references to terminology used within that context.
+## Example Input Data
+Consider the following example input data:
 
-# Disclamer
-Regarless of the initial purpose of processing RNA-data, the project has been made purely with hobbiyst-set-of-mind and the author doesn't have any scientific background.
+| String      | Value 1 | Value 2 | Value 3 | Value 4 |
+|-------------|---------|---------|---------|---------|
+| AAAAAAAA    | 1       | 2       | 3       | 4       |
+| BBBBBBBB    | 0       | 2       | 1       | 8       |
+| CCCCCCCC    | 10      | 20      | 11      | 100     |
+| DDDDDDDDDDD | 10      | 20      | 50      | 100     |
+| FFFFAAAB    | 50      | 70      | 100     | 101     |
 
-# File structure
-- `src/`: Folder enhouses all the tools for performing a process.
-- `input/` and `output/`: Folders are just for organizational reasons. `input/` for keeping the files that are supplied to a process and `output/` for the processes output files. The program doesn't enforce to use these folder for input/output.
-- `scripts/`: Another folder for organizational reasons. The project does not contain a specific index-file which can be run, but a developer can run various scripts perform various tasks.
+The project is specifically tailored for processing RNA data, incorporating terminology relevant to that context.
 
-# Usage
-The project has one special class, `RNA`, which handles most of the logic. There are also CSV/Excel handler classes, that handles file reading and saving to respective file formats. The `Exporter`-class acts as an interface for both CSV- and Excel-classes.
+## File Structure
+- `src/`: Contains all the tools for performing a process.
+- `input/` and `output/`: Organizational folders for input and output files. The program does not enforce their use.
+- `scripts/`: Another organizational folder for various scripts used to perform different tasks.
 
-# Provided examples
+## Usage
+
+### Prerequisites
+The only requirement is to have [NodeJS](https://nodejs.org/en) installed. The project lacks a user interface; scripts must be created and run via the command prompt.
+
+### Installation
+Run `npm i` or `npm install` in the command prompt to install required third-party packages.
+
+### Writing Scripts
+The project features a special class, `RNA`, handling most logic. All `RNA` class methods are static. Additionally, there are `CSV` and `Excel` handler classes for file reading and saving. The `Exporter` class serves as an interface for both `CSV` and `Excel` classes.
+
+## Provided Examples
+The project includes example scripts showcasing tool usage. Examples are organized into folders, each with an `index.js` file for execution. Input and output folders store data submitted for processing and the corresponding output, respectively.
+
+### Creating Groups of Strings
+Run the following command to execute the example:
+```bash
+npm run examples/form-str-groups-1/index.js
+```
+
+This example processes a dataset from `input.csv`, forming groups of strings. Groups are created if `2 - n` strings share a common substring of length `X`. The script produces two files similar to `input.csv`, but with an added Group column indicating the associated group for each string. Note that a string can belong to multiple groups.
