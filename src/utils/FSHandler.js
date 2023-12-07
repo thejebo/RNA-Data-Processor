@@ -1,9 +1,8 @@
 const fs = require('fs')
 const Csv = require('./filesystem/handlers/Csv')
 const Excel = require('./filesystem/handlers/Excel')
-const path = require('path')
 
-class Exporter {
+class FSHandler {
 
   _data
   _handler
@@ -18,7 +17,7 @@ class Exporter {
    */
   constructor (type, filename, workDir, createPath = false) {
     if (['csv', 'excel'].indexOf(type) === -1) {
-      throw new Error('Invalid exporter type ' + type + '.')
+      throw new Error('Invalid file type ' + type + '.')
     }
 
     if (!fs.existsSync(workDir)){
@@ -45,6 +44,25 @@ class Exporter {
     return await this._handler.save()
   }
 
+  static async readFile (filePath, separator = ',') {
+    const extension = FSHandler.getExtension(filePath)
+    switch (extension) {
+    case 'csv':
+      return await Csv.readFile(filePath, separator)
+    case 'xlsx':
+      return await Excel.readFile(filePath)
+    }
+  }
+
+  static getExtension (filename) {
+    const allowedFileTypes = ['csv', 'xlsx']
+    const extension = filename.split('.').pop()
+    if (allowedFileTypes.indexOf(extension) === -1) {
+      throw new Error(`[FSHandler] Only allowed file types are ${allowedFileTypes.join(', ')}.`)
+    }
+    return filename.split('.').pop()
+  }
+
   _getHandler (type, filename, workDir) {
     if (type === 'excel') {
       return new Excel(filename, workDir)
@@ -54,4 +72,4 @@ class Exporter {
   }
 }
 
-module.exports = Exporter
+module.exports = FSHandler
