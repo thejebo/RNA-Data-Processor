@@ -1,10 +1,10 @@
 const fs = require('fs')
-const Exporter = require('./Exporter')
+const FSHandler = require('./FSHandler')
 const CSVHandler = require('./filesystem/handlers/Csv')
 
 class RNA {
   /**
-   * The method takes in an array of strings and from those strings, it forms tries to find common matching substrings.
+   * The method takes in an array of strings and from those strings, it tries to find common matching substrings.
    * The method returns an object with the matching substrings as keys and arrays of strings as values.
    *
    * @param {Array} strings - An array of strings to compare.
@@ -37,6 +37,29 @@ class RNA {
             if (matches[substr].indexOf(currentString) === -1) {
               matches[substr].push(currentString)
             }
+          }
+        }
+
+        if ((i + 1) % progressLineCount === 0) {
+          console.log(i + 1 + '/' + strings.length);
+        }
+      }
+    } else {
+      // Loop through each string in the array
+      for (let i = 0; i < strings.length; i++) {
+        // Get the current string
+        const currentString = strings[i];
+        // Loop through each possible substring of the current string
+        for (let j = 0; j < currentString.length - threshold + 1; j++) {
+          // Get the substring
+          const substr = currentString.slice(j, j + threshold);
+          // If the substring doesn't exist in the matches object, create a new array for it
+          if (!matches[substr]) {
+            matches[substr] = []
+          }
+          // If the current string doesn't exist in the matches array for the substring, add it
+          if (matches[substr].indexOf(currentString) === -1) {
+            matches[substr].push(currentString)
           }
         }
 
@@ -218,29 +241,6 @@ class RNA {
   }
 
   /**
-   * Reads an CSV file containing aptamers and samples.
-   * Then it reads the families from JSON file and adds the samples to the aptamers.
-   */
-  static async createAptamerEnricmentSampleFamilyJSONFiles (dataInputPath, familiesInputPath, outputPath) {
-    console.log('[CreateAptamerEnricmentSampleFamilyJSONFiles] Sample data will be read from: ', dataInputPath)
-    console.log('[CreateAptamerEnricmentSampleFamilyJSONFiles] Families will be read from:', familiesInputPath)
-    console.log('[CreateAptamerEnricmentSampleFamilyJSONFiles] The results will be written to:', outputPath)
-    // Read the original data.
-    const data = await CSVHandler.readFile(dataInputPath)
-    // Read the families from JSON.
-    const json = JSON.parse(fs.readFileSync(familiesInputPath))
-
-    const families = RNA.addSampleAverageToFamilies(json.families, data)
-    RNA.writeJSONToFile(families, outputPath)
-    // const familyNames = Object.keys(families)
-    // for (let family of familyNames) {
-    //   RNA.writeJSONToFile(families[family], outputPath + '/' + family + '.json')
-    // }
-
-    return families
-  }
-
-  /**
    * This function is just a wrapper for writing JSON to a file.
    *
    * @param {Object} json JSON object to write to file.
@@ -257,48 +257,6 @@ class RNA {
         return console.log(err);
       }
     })
-  }
-
-  static async combineFamilyEnrichmentData () {
-    // function to process data for a single family
-    function processFamilyData (data) {
-      const aptamers = data.aptamers
-      const aptamerNames = Object.keys(aptamers)
-      const sampleNames = aptamers[aptamerNames[0]].samples.map(sample => sample.name)
-      const matrix = aptamerNames.map(aptamerName => {
-        const enrichmentLevels = aptamers[aptamerName].samples.reduce((acc, sample) => {
-          acc[sample.name] = parseFloat(sample.enrichmentLevel)
-          return acc
-        }, {})
-        return sampleNames.map(sampleName => enrichmentLevels[sampleName])
-      })
-      return { name: data.name, matrix }
-    }
-
-    // function to combine the processed data for multiple families
-    function combineFamilyData (familyDataList) {
-      const sampleNames = familyDataList.flatMap(familyData => familyData.matrix.map(row => row[0]))
-      const matrix = familyDataList.flatMap(familyData => familyData.matrix.map(row => row.slice(1)))
-      return { sampleNames, matrix };
-    }
-
-    // Read and process data for each family
-    const familyDataList = [];
-    const basePath = './families-output'
-    const filenames = [
-      basePath + '/AGAAA-family-representation.json',
-      basePath + '/ACTGT-family-representation.json'
-    ]
-
-    for (const filename of filenames) {
-      const data = JSON.parse(fs.readFileSync(filename))
-      const processedData = processFamilyData(data)
-      familyDataList.push(processedData)
-    }
-
-    // combine processed data for all families
-    const combinedData = combineFamilyData(familyDataList)
-    console.log(combinedData)
   }
 
   /**
@@ -340,41 +298,21 @@ class RNA {
       rows.push(tmp)
     }
 
-    // Create object for the exporter.
+    // Create object for the FSHandler.
     var keys = Object.keys(rows[0])
     var values = Object.keys(rows[0])
     var headers = {}
     keys.forEach((key, i) => headers[key] = values[i])
 
     try {
-      var exporter = new Exporter('excel', fileName, outputPath, true)
+      var FSHandler = new FSHandler('excel', fileName, outputPath, true)
     } catch (error) {
       console.log(error, error.message)
     }
 
-    await exporter.buildFromArray(headers, rows)
-    const fileSaveResponse = await exporter.save()
+    await FSHandler.buildFromArray(headers, rows)
+    const fileSaveResponse = await FSHandler.save()
     console.log(fileSaveResponse)
-  }
-
-  /**
-   * Parses a JSON file containing aptamer families and removes families with less than a given number of aptamers.
-   *
-   * @param {String} inputPath A path to a JSON file containing aptamer families.
-   * @param {String} outputPath A path to a JSON file to write the result to.
-   * @param {Number} excludeFamilySize Exclude families with less than this number of aptamers.
-   */
-  static async parseFamilies (inputPath, outputPath, excludeFamilySize = 2) {
-    const data = await fs.readFileSync(inputPath, { encoding: 'utf8', flag: 'r' })
-    const families = JSON.parse(data).families
-    console.log(`Read ${Object.keys(families).length} families from ${inputPath}.`)
-    const result = RNA.excludeFamilyBasedOnMemberCount(families, excludeFamilySize)
-    // Convert the JSON object to a string.
-    const jsonContent  = JSON.stringify(result, null, 2)
-    // Write the result to a file.
-    await fs.writeFileSync(outputPath, jsonContent, 'utf8')
-    console.log(`JSON file has been saved to ${outputPath}.`)
-    console.log('There are ' + Object.keys(result.families).length + ' families left.')
   }
 
   static excludeFamilyBasedOnMemberCount (families, excludeFamilySize = 2) {
@@ -569,6 +507,80 @@ class RNA {
     }
 
     return isAboveThreshold
+  }
+
+
+  static flattenFamilyObjectsToAptamerArray (families) {
+    const familyNames = Object.keys(families)
+    const aptamers = []
+    for (const i in familyNames) {
+      for (const j in families[familyNames[i]]) {
+        aptamers.push([families[familyNames[i]][j], familyNames[i]])
+      }
+    }
+    return aptamers
+  }
+
+  static addSampleValuesToFamilyAptamers (families, data, aptamerPropertyName = 'Aptamer', progressLineCount = 1000) {
+    // Get sample names from the first row of the data.
+    const sampleNames = Object.keys(data[0]).filter((k) => k !== aptamerPropertyName)
+    let familyNames = Object.keys(families)
+    // Go trough each row in raw data.
+    const output = {} // This will contain all the families with their aptamers and samples.
+
+    for (let name of familyNames) {
+      let aptamers = {}
+      families[name].forEach(a => aptamers[a] = {
+        samples: {}
+      })
+      output[name] = aptamers
+    }
+
+    for (let i in data) {
+      var row = data[i]
+      // Go trough each family
+      for (let name of familyNames) {
+        let family = output[name]
+        // If the current row's aptamer if part of the family...
+        if (Object.keys(family).includes(row[aptamerPropertyName])) {
+          // Go through row's samples.
+          for (var sampleName of sampleNames) {
+            // Find the aptamer from family...
+            family[row[aptamerPropertyName]].samples[sampleName] = row[sampleName]
+          }
+        }
+      }
+    }
+
+    return output
+  }
+
+  static addSamplesToAptamerArray (array, data, aptamerPropertyName = 'Aptamer', progressLineCount = 1000) {
+    // Get sample names from the first row of the data.
+    const sampleNames = Object.keys(data[0]).filter((k) => k !== aptamerPropertyName)
+    // Go trough each row in raw data.
+    const output = [] // This will contain all the families with their aptamers and samples.
+    const cache = {} // This will contain Strings with their Sample values that might come .
+
+    for (let i in array) {
+      const flattedRow = array[i]
+      const str = flattedRow[0]
+      const row = data.find(a => a[aptamerPropertyName] === str)
+      let rowSamples = null
+      if (cache[str]) {
+        rowSamples = cache[str]
+      } else {
+        cache[str] = []
+        for (var j in sampleNames) {
+          cache[str].push(row[sampleNames[j]])
+        }
+        rowSamples = cache[str]
+      }
+
+      output.push(array[i].concat(rowSamples))
+    }
+
+    return output
   }
 }
 
